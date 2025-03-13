@@ -35,6 +35,8 @@ from dataset import (
     trivial_collate,
 )
 
+from render_functions import * 
+
 
 # Model class containing:
 #   1) Implicit volume defining the scene
@@ -98,18 +100,20 @@ def render_images(
 
         # TODO (Q1.3): Visualize xy grid using vis_grid
         if cam_idx == 0 and file_prefix == '':
-            pass
+            img = vis_grid(xy_grid, image_size)
+            plt.imsave('images/1_3_xy_grid.png', img)
 
         # TODO (Q1.3): Visualize rays using vis_rays
         if cam_idx == 0 and file_prefix == '':
-            pass
+            img = vis_rays(ray_bundle, image_size)
+            plt.imsave('images/1_3_rays.png', img)
         
-        # TODO (Q1.4): Implement point sampling along rays in sampler.py
-        pass
-
+        # TODO (Q1.4): Implement point sampling along rays in sampler.pyw
+        ray_bundle = model.sampler(ray_bundle)
+        
         # TODO (Q1.4): Visualize sample points as point cloud
         if cam_idx == 0 and file_prefix == '':
-            pass
+            render_points('images/1_4_sample_points.png', ray_bundle.sample_points.reshape(-1, 3).unsqueeze(0))
 
         # TODO (Q1.5): Implement rendering in renderer.py
         out = model(ray_bundle)
@@ -124,7 +128,10 @@ def render_images(
 
         # TODO (Q1.5): Visualize depth
         if cam_idx == 2 and file_prefix == '':
-            pass
+            depth = out['depth'] / out['depth'].max()
+            depth_img = np.array(depth.view(image_size[1], image_size[0], 1).detach().cpu()).squeeze()
+            plt.imsave('images/1_5_depth.png', depth_img)
+            
 
         # Save
         if save:
@@ -200,7 +207,7 @@ def train(
             out = model(ray_bundle)
 
             # TODO (Q2.2): Calculate loss
-            loss = None
+            loss = torch.nn.functional.mse_loss(out['feature'], rgb_gt)
 
             # Backprop
             optimizer.zero_grad()

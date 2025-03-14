@@ -112,6 +112,14 @@ def get_nerf_datasets(
             size=tuple(image_size),
             mode="bilinear",
         ).permute(0, 2, 3, 1)
+        
+    train_idx, val_idx, test_idx = train_data["split"]
+    
+    # Randomly select 
+    # np.random.seed(0)
+    # np.random.shuffle(train_idx)
+    # if len(train_idx) > 1:
+    #     train_idx = np.random.choice(train_idx, 1, replace=False).tolist()    
 
     cameras = [
         PerspectiveCameras(
@@ -119,8 +127,6 @@ def get_nerf_datasets(
         ).to("cpu")
         for cami in range(n_cameras)
     ]
-
-    train_idx, val_idx, test_idx = train_data["split"]
 
     train_dataset, val_dataset, test_dataset = [
         ListDataset(

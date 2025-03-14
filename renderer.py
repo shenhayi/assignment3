@@ -151,16 +151,16 @@ class SphereTracingRenderer(torch.nn.Module):
         # 2) Maintain a mask with the same batch dimension as the ray origins,
         #   indicating which points hit the surface, and which do not
         N = origins.shape[0]
-        pts = origins
-        
-        for i in range(self.max_iters):
-            t = implicit_fn(pts)
-            pts = pts + t * directions
-            mask = t.view(N, 1) <= 1e-6
-            if torch.sum(mask) == N:
-                break
+        points = origins.clone()  
 
-        return pts, mask
+        for i in range(self.max_iters):
+            t = implicit_fn(points)
+            points = points + t * directions  
+            mask = (t.view(N, 1) <= 1e-6)     
+            if mask.all():
+                break  
+        
+        return points, mask
 
     def forward(
         self,

@@ -30,15 +30,15 @@ class VolumeRenderer(torch.nn.Module):
         # TODO (1.5): Compute transmittance using the equation described in the README
         # TODO (1.5): Compute weight used for rendering from transmittance and alpha
         B = deltas.shape[0]
-        n_points = deltas.shape[1]
-        rays_density_sq = rays_density.squeeze() # (B, n_points)
-        deltas_sq = deltas.squeeze() # (B, n_points)
-        prods = -rays_density_sq * deltas_sq # (B, n_points)
-        exp_prods = torch.exp(prods) # (B, n_points)
-        one_minus_exp_prods = 1 - exp_prods # (B, n_points)
-        T = torch.cumprod(torch.cat((torch.ones(B, device = "cuda").unsqueeze(1), exp_prods), dim = 1)[:, :-1], dim = 1) # (B, n_points)
-        weights = T * one_minus_exp_prods # (B, n_points)
-        
+        rays_density = rays_density.squeeze()
+        deltas = deltas.squeeze()
+        neg_product = -rays_density * deltas
+        exp_neg_product = torch.exp(neg_product)
+        one_minus_exp = 1 - exp_neg_product
+        initial = torch.ones(B, 1, device="cuda")
+        T = torch.cumprod(torch.cat([initial, exp_neg_product], dim=1)[:, :-1], dim=1)
+        weights = T * one_minus_exp
+
         return weights
     
     def _aggregate(
@@ -210,9 +210,8 @@ class SphereTracingRenderer(torch.nn.Module):
 
 def sdf_to_density(signed_distance, alpha, beta):
     # TODO (Q7): Convert signed distance to density with alpha, beta parameters
-    lap_dist = torch.distributions.laplace.Laplace(0, beta)
-    
-    return alpha * lap_dist.cdf(-signed_distance)
+    return alpha * torch.distributions.laplace.Laplace(0, beta).cdf(-signed_distance)
+
 
 class VolumeSDFRenderer(VolumeRenderer):
     def __init__(
